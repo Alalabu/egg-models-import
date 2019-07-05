@@ -90,7 +90,7 @@ module.exports = appInfo => {
   // modelsImport
   config.modelsImport = {
     modelExport: {
-	  // 这里所配置的, 是你的 egg-models-export 项目访问方式
+	// 这里所配置的, 是你的 egg-models-export 项目访问方式
       modelHost: 'http://127.0.0.1:7001/',
     },
 	// 此处是正常的 sequelize 配置
@@ -141,7 +141,7 @@ class TestService extends Service {
   }
 }
 
-module.exports = HomeController;
+module.exports = TestService;
 ```
 
 ## 提问交流
