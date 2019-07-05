@@ -1,6 +1,6 @@
 {
   "name": "egg-models-import",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "The uniform sequelize models are used for remote loading of multiple projects.",
   "eggPlugin": {
     "name": "modelsImport"
@@ -40,19 +40,19 @@
     "autod": "autod"
   },
   "files": [
-    "config"
+    "config", "app"
   ],
   "ci": {
     "version": "8, 10"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/eggjs/egg-models-import.git"
+    "url": "git+https://github.com/Alalabu/egg-models-import.git"
   },
   "bugs": {
-    "url": "https://github.com/eggjs/egg/issues"
+    "url": "https://github.com/Alalabu/egg-models-import/issues"
   },
-  "homepage": "https://github.com/eggjs/egg-models-import#readme",
-  "author": "Alalabu",
+  "homepage": "https://github.com/Alalabu/egg-models-import#readme",
+  "author": "BaiHaiou",
   "license": "MIT"
 }

@@ -103,6 +103,7 @@ const MOCKMODEL = Symbol('Context#mock#model');
 module.exports = {
   get model_promise() {
     if (!this[MOCKMODEL]) {
+      console.log('[PLUGIN] egg-models-import load...');
       /**
        * 通过配置对象获取 2 个主要配置
        * 1. modelExport: 导出模型的配置
