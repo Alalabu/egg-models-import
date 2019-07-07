@@ -90,8 +90,12 @@ module.exports = appInfo => {
   // modelsImport
   config.modelsImport = {
     modelExport: {
-	// 这里所配置的, 是你的 egg-models-export 项目访问方式
+	  // 这里所配置的, 是你的 egg-models-export 项目访问方式
       modelHost: 'http://127.0.0.1:7001/',
+	  // 鉴权时所需的 key
+	  authKey: 'project-1',
+	  // 鉴权时所需的 secret
+      authSecret: '68b5dfc0-4c82-11e9-81c9-73dbcff02bd1',
     },
 	// 此处是正常的 sequelize 配置
     sequelize: {
