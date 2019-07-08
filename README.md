@@ -51,18 +51,19 @@ Description here.
 
 ### 依赖的插件
 
-- egg-sequelize：`^4.3.1`
+- ~~egg-sequelize：`^4.3.1` (1.0.5前)~~
+- egg-sequelize：`^5.1.0` (1.0.6+)
 - request：`^2.88.0`
 - mysql2：`^1.6.5`
 - moment：`^2.24.0`
 
-### 安装
+### 1. 安装
 
 ```bash
 $ npm i egg-models-import --save
 ```
 
-### 开启插件
+### 2. 开启插件
 
 ```js
 // config/plugin.js
@@ -72,7 +73,7 @@ exports.modelsImport = {
 };
 ```
 
-### 配置插件
+### 3. 配置插件
 ```javascript
 // config/config.{dev}.js
 'use strict';
@@ -126,7 +127,7 @@ module.exports = appInfo => {
   };
 };
 ```
-### 模型访问
+### 4. 模型访问
 ```js
 'use strict';
 
@@ -147,6 +148,16 @@ class TestService extends Service {
 
 module.exports = TestService;
 ```
+## 历史版本
+> `1.0.6` ：
+> 1. 新增 对**数据核心**多库的支持；
+> 2. 修复 无法通过 `model.query` 进行原始查询的问题;
+> 3. 变更 `egg-sequelize` 的支持版本从 `4.3.1` 到 `5.1.0`;
+> 
+> `1.0.5` ：
+> 1. 新增 对**数据核心**鉴权的支持，通过插件配置 `authKey` 和 `authSecret`，获取**数据核心**配置的数据生成缓存模型;
+> 2. 修复 其他问题;
+
 
 ## 提问交流
 

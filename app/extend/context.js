@@ -26,7 +26,7 @@ const loadRemoteModels = async (sequelize, modelHost, modelIn, modelAttrs, authK
     console.log('\x1B[33m%s\x1b[0m', '【egg-models-import】END 〓〓〓〓〓〓〓〓〓〓〓〓〓〓〓〓〓〓〓〓〓〓');
     // Sequelize 数据类型(重命名)
     const DataTypes = Sequelize;
-    const MockModel = {}; // 虚拟配置的 Model
+    const MockModel = sequelize; // {}; // 虚拟配置的 Model
     const AssModels = []; // 关联模型数组
     // 遍历模型(对象), 获取模型属性及关联关系
     for (const model_name of sequelize_models) {

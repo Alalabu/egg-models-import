@@ -1,6 +1,6 @@
 {
   "name": "egg-models-import",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "The uniform sequelize models are used for remote loading of multiple projects.",
   "eggPlugin": {
     "name": "modelsImport"
@@ -11,7 +11,7 @@
     "egg-plugin"
   ],
   "dependencies": {
-    "egg-sequelize": "^4.3.1",
+    "egg-sequelize": "^5.1.0",
     "request": "^2.88.0",
     "mysql2": "^1.6.5",
     "moment": "^2.24.0"
@@ -39,7 +39,8 @@
     "autod": "autod"
   },
   "files": [
-    "config", "app"
+    "config",
+    "app"
   ],
   "ci": {
     "version": "8, 10"
