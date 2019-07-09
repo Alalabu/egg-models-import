@@ -1,21 +1,20 @@
 'use strict';
 
-module.exports = app => {
+class AppBootHook {
 
-  app.model_keys = 'abc12345';
+  constructor(app) {
+    this.app = app;
+  }
 
-  // app.beforeStart(async () => {
-  //   console.log('这是插件里的 app 哦 -> ', app);
-  //   if (app.model_promise) {
-  //     console.log('挂载 model ...');
-  //     // const ctx = app.createAnonymousContext();
-  //     // ctx.model = await app.model_promise;
-  //     app.model = await app.model_promise;
-  //     console.log('挂载 model 结束...');
-  //   }
-  // });
-  // console.log('这是插件里的 app.context -> ', Object.keys(app));
-  // if(app.model_promise){
-  //   app
-  // }
-};
+  async didLoad() {
+    // 获取 ctx 对象
+    const app = this.app;
+    const ctx = app.createAnonymousContext();
+    if (ctx.model_promise) {
+      // 将缓存的 model_promise 挂载至 app.model
+      app.model = await ctx.model_promise;
+    }
+  }
+}
+
+module.exports = AppBootHook;

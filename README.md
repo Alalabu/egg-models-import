@@ -127,7 +127,7 @@ module.exports = appInfo => {
   };
 };
 ```
-### 4. 模型访问
+### 4. 模型访问 (1.0.7更新model挂载方式)
 ```js
 'use strict';
 
@@ -136,19 +136,19 @@ const {Service} = require('egg');
 class TestService extends Service {
   async index() {
     const { ctx } = this;
-	// 由于 model 是在项目启动加载时异步解析生成的
-	// 原始数据挂载在 ctx.model_promise 
-	// 调用时需先异步获取model数据方可进行后续操作
-	// 由于数据在首次获取后会在项目中缓存, 因此异步解析的过程是一次性完成的
-    const model = await ctx.model_promise;
+	// 实现了无缝挂载，旧项目载入插件可即插即用
+    const clients = await ctx.model.client.findAll({ limit: 2, raw: true });
 
-    return { client: await model.client.findAll({ limit: 2, raw: true }) };
+    return { clients };
   }
 }
 
 module.exports = TestService;
 ```
 ## 历史版本
+> `1.0.7` ：
+> 1. 隐藏了 `ctx.model_promise` 的挂载方式，直接将从**数据核心**获取的 `models` 挂载至 `ctx.model`，以便旧项目无缝使用。
+>
 > `1.0.6` ：
 > 1. 新增 对**数据核心**多库的支持；
 > 2. 修复 无法通过 `model.query` 进行原始查询的问题;

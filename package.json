@@ -1,6 +1,6 @@
 {
   "name": "egg-models-import",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "The uniform sequelize models are used for remote loading of multiple projects.",
   "eggPlugin": {
     "name": "modelsImport"
