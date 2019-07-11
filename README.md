@@ -145,7 +145,99 @@ class TestService extends Service {
 
 module.exports = TestService;
 ```
+
+## 5. 热更新 (1.0.8新增)
+通常，在 **测试阶段** 或者 **极端的生产环境** 中，我们可能需要：
+> 1. 更新 **数据核心** 的数据模型；
+> 2. 在适当的时候，重启 **业务分支** 或者，业务分支不做任何动作，便可以更新分支缓存的数据模型。
+
+#### 5.1 在 **分支** 启动时，首次获取 **数据核心** 所描述的虚拟数据版本。
+![](https://sheu-huabei5.oss-cn-huhehaote.aliyuncs.com/bho/%E7%83%AD%E6%9B%B4-01-%E9%A6%96%E6%AC%A1%E8%8E%B7%E5%8F%96%E7%89%88%E6%9C%AC.jpg)
+- 若无需鉴权, 则直接配置于 modelsExport 
+
+```js
+// 数据核心 (安装了egg-models-export,并装载实体数据文件的应用)
+// config/config.{dev}.js
+
+config.modelsExport = {
+    version: {
+      code: '1.0.0',
+      cron: '0 0 */3 * * *',
+    },
+}
+```
+- 若多角色核心，则将版本配置于 `auth` 组的角色对象中。
+
+```js
+// 数据核心 (安装了egg-models-export,并装载实体数据文件的应用)
+// config/config.{dev}.js
+
+config.modelsExport = {
+    auth: [
+      {
+        version: {
+          code: '2.0.0',
+          interval: 60000,
+        },
+        key: 'haiou',
+        delegate: 'model_s',
+        secret: '7825dfc0-4c82-11e9-81c9-73dbcff02a31',
+      }, {
+        version: {
+          code: '3.0.5',
+          interval: '3m',
+        },
+        key: 'xiaofei',
+        delegate: 'model',
+        secret: '68b5dfc0-4c82-11e9-81c9-73dbcff02bd1',
+      },
+    ],
+}
+```
+> `version` 对象有三个属性:
+> - *code* `[String]` 版本号
+> - *interval* `[String | Number]` 字符串或数字类型的执行时机，字符串类型时仅支持后缀为 **时、分、秒** 的关键字：**h、m、s**；数字类型时表示一个毫秒数。`interval`与`cron`只能配置一个，若同时存在则 `interval` 优先级较大。
+> - *cron* `[String]` 表示执行时机的 cron 表达式。
+>  
+> 注意: `interval` 与 `cron` 所表示的是，**分支项目获取新版本时，在多久之后执行 虚拟模型 替换。将在替换前执行一个 `setTimeout` 计时器。**
+
+#### 5.2 如果项目需要热更，则应该配置 **检查核心版本** 的插件定时器。
+![](https://sheu-huabei5.oss-cn-huhehaote.aliyuncs.com/bho/%E7%83%AD%E6%9B%B4-02-%E5%AE%9A%E6%97%B6%E8%AF%B7%E6%B1%82%E7%89%88%E6%9C%AC.jpg)
+```js
+// 分支项目 (安装了 egg-models-import 的应用)
+// config/config.{dev}.js
+
+config.modelsImport = {
+    modelExport: {
+      // 其他配置...
+
+      // 热更检查时机
+      checkVersion: {
+        // disable: false, 
+        // interval: 10000,
+        cron: '*/10 * * * * *',
+      },
+    },
+    sequelize: {
+		// ...
+	}
+}
+```
+> 若配置有 `checkVersion` 对象, 则可以开启一个用于检查 **数据核心** 所描述的数据版本的 **定时任务**。
+> `disable` 表示定时任务的禁用状态。
+> `interval` 或 `cron` 表示检查版本定时任务的执行时机。
+
+#### 5.3 热更过程
+- **数据核心** 在 **分支** 获取虚拟模型后，可随时进行关闭，并调整新的模型（如更新现有模型的属性、关系，或增加新的模型文件）。
+- 在 **更新模型** 行为结束后，需 **将模型版本号 `version.code` 配置为新的标识**，**分支** 在检查版本时若发现 **不一样的版本号** ，则对当前进程中的虚拟数据进行热更新。
+- 为避免影响线上业务，可在 **数据核心** 的 `version` 中设置更新时机，规避业务高峰。
+
+
 ## 历史版本
+> `1.0.8` ：
+> 1. 新增 数据热更新模式；
+> 2. 微调 现有执行过程；
+> 
 > `1.0.7` ：
 > 1. 隐藏了 `ctx.model_promise` 的挂载方式，直接将从**数据核心**获取的 `models` 挂载至 `ctx.model`，以便旧项目无缝使用。
 >

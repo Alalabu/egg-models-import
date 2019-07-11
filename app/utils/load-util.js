@@ -1,6 +1,7 @@
 'use strict';
 const Sequelize = require('sequelize');
 const moment = require('moment');
+const cronParser = require('cron-parser');
 const HttpClient = require('./http-client');
 
 /**
@@ -12,16 +13,32 @@ const HttpClient = require('./http-client');
  * @param {String} authKey 是用户授权的 key
  * @param {String} authSecret 是用户授权的 value
  */
-const loadRemoteModels = async (sequelize, modelHost, modelIn, modelAttrs, authKey, authSecret) => {
+// const loadRemoteModels = async (sequelize, modelHost, modelIn, modelAttrs, authKey, authSecret) => {
+const loadRemoteModels = async app => {
   try {
-    // 1. 从外部动态获取 models 列表
-    const sequelize_models = await HttpClient.$http(`${modelHost}${modelIn}`, 'POST', { authKey, authSecret });
+    // 1. 获取配置信息
+    const modelsImport = app.config.modelsImport; // 插件配置
+    const _sequelize = modelsImport.sequelize;
+    const modelExport = modelsImport.modelExport;
+    const { modelHost, modelIn, modelAttrs, authKey, authSecret } = modelExport;
+    const { dialect, host, port, database, username, password, timezone, pool, retry, logging } = _sequelize;
+    const sequelize = new Sequelize(database, username, password, {
+      dialect, host, port, timezone, pool, retry, logging,
+    });
+    // 2. 从外部动态获取 models 列表
+    const modelInRes = await HttpClient.$http(`${modelHost}${modelIn}`, 'POST', { authKey, authSecret });
+    if (modelInRes.err) {
+      console.error('加载数据核心异常: ', modelInRes);
+      return modelInRes;
+    }
+    const sequelize_models = modelInRes.dataKeys; // 数据表的键集合
+    const modelVerion = modelInRes.version; // 数据核心版本
     if (!Array.isArray(sequelize_models)) {
       return console.error('\x1B[31m%s\x1B[39m', '【ERROR】 egg-model-export load error: ', sequelize_models);
     }
     // 界面展示
     console.log('\x1B[33m%s\x1b[0m', '【egg-models-import】BEGIN 〓〓〓〓〓〓〓〓〓〓〓〓〓〓〓〓〓〓〓〓〓');
-    console.log('\x1B[31m%s\x1B[39m', '【egg-models-import】IMPORT TABLES：');
+    console.log('\x1B[31m%s\x1B[39m', `【egg-models-import】IMPORT TABLES [version=${modelVerion.code}]：`);
     sequelize_models.forEach(t => {
       console.log(t);
     });
@@ -106,14 +123,110 @@ const loadRemoteModels = async (sequelize, modelHost, modelIn, modelAttrs, authK
         );
       });
     });
-
-    return MockModel;
+    // 返回虚拟模型[model], 以及数据模型版本[version]
+    return { mockModel: MockModel, version: modelVerion };
   } catch (error) {
     console.error(error);
-    return {};
+    return { err: error, msg: '数据核心载入错误!' };
+  }
+};
+
+/**
+ * 用于时间转换的函数
+ * @param {TimeObject} t {interval: 简单时间, cron: cron格式时间}
+ */
+const timePaser = ({ interval, cron }) => {
+  const defaultInterval = 10 * 60 * 1000;
+  if (interval) {
+    if (Number.isSafeInteger(interval) && interval > 10 * 1000) {
+      // 安全范围时间, 并且时间大于 10 秒, 则直接使用 interval
+      return interval;
+    } else if (typeof interval === 'string') {
+      // 如果 interval 是一个字符串, 则必须是 数字 + [h | m | s] 组合
+      const num = Number(interval.substring(0, interval.length - 1)),
+        suffix = interval[interval.length - 1];
+      if (!Number.isSafeInteger(num)) {
+        // 若 num 不是有效数字, 则返回默认更新时机
+        return defaultInterval;
+      }
+      switch (suffix) {
+        case 'h': return num * 60 * 60 * 1000;
+        case 'm': return num * 60 * 1000;
+        case 's': return num * 1000;
+        default : defaultInterval;
+      }
+    }
+  } else if (cron) {
+    // cron 格式则通过 cron-parser 进行时间转换
+    const now = new Date();
+    const future = new Date(cronParser.parseExpression(cron).next().toString());
+    const result = future - now;
+    return result;
+  }
+  // 返回默认执行时机: 10分钟后
+  return defaultInterval;
+};
+
+/**
+ * 刷新模型
+ * @param {Object} app Application
+ */
+const reflushModels = async app => {
+  try {
+    const newModels = await loadRemoteModels(app);
+    if (newModels.err) {
+      throw '[egg-models-import] reflushModels ERROR: ' + newModels.err;
+    }
+    app.model = newModels.mockModel;
+    // 更新其他 app 的 model + version
+    // app.messenger.sendToApp('#egg#models#updateModels', { model: newModels.mockModel, version: newModels.version });
+    // 取消更新状态
+    if (!newModels.err && app.egg_models_update_wait) {
+      app.egg_models_update_wait = null;
+    }
+  } catch (error) {
+    if (app.egg_models_update_wait) {
+      app.egg_models_update_wait = null;
+    }
+    app.coreLogger.error('[egg-models-import] reflushModels Exception: ' + error);
+    console.error(error);
+  }
+};
+
+/**
+ * 加载数据模型的版本
+ * @param {Object} app Application
+ */
+const loadDataVersion = async app => {
+  try {
+    const modelExport = app.config.modelsImport.modelExport; // 插件配置
+    const { modelHost, modelVersion, authKey, authSecret } = modelExport;
+    const versionRes = await HttpClient.$http(`${modelHost}${modelVersion}`, 'POST', { authKey, authSecret });
+    // console.log('[egg-models-import] 实时监测版本 versionRes: ', versionRes);
+    if (!versionRes || versionRes.err) {
+      throw `loadDataVersion() error [versionRes => ${JSON.stringify(versionRes)}]`;
+    }
+    // 对比版本
+    if (versionRes.code && app.config.modelsImport.version && app.config.modelsImport.version.code !== versionRes.code) {
+      const execInterval = timePaser({ ...versionRes }); // 获取执行更新时机的毫秒数
+      console.log(`[egg-models-import] 实时监测版本, 将会在 [${execInterval}ms] 之后进行更新!`);
+      // 更新缓存中的预设版本
+      app.config.modelsImport.version = versionRes;
+      // 设置 execInterval 时间后执行重新更新 models
+      app.egg_models_update_wait = setTimeout(reflushModels, execInterval, app);
+    }
+    // else {
+    //   console.log('[egg-models-import] 实时监测版本,无需进行更新!!');
+    // }
+  } catch (error) {
+    if (!error) {
+      console.error('[egg-models-import] ERROR: 服务器无法检测...');
+    } else {
+      console.error('[egg-models-import] ERROR: ', error);
+    }
   }
 };
 
 module.exports = {
-  loadRemoteModels,
+  loadRemoteModels, loadDataVersion,
 };

@@ -10,5 +10,6 @@ exports.modelsImport = {
   modelExport: {
     modelIn: 'models/in',
     modelAttrs: 'models/attrs',
+    modelVersion: 'models/v',
   },
 };
