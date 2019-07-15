@@ -64,6 +64,7 @@ $ npm i egg-models-import --save
 ```
 
 ### 2. 开启插件
+> 在分支项目中, 切勿开启插件 `egg-sequelize` ,由于加载模型时机不同，`egg-sequelize` 依赖于项目本地的模型文件，同时开启会产生冲突。
 
 ```js
 // config/plugin.js
@@ -131,6 +132,7 @@ module.exports = appInfo => {
 };
 ```
 ### 4. 模型访问 (1.0.7更新model挂载方式)
+
 ```js
 'use strict';
 
@@ -147,6 +149,23 @@ class TestService extends Service {
 }
 
 module.exports = TestService;
+```
+> 1.0.82 更新了模型挂载时，模型名字的**格式化**方式。默认情况下，模型名与数据库表名一致。`1.0.82` 提供了将模型名(默认的下划线命名方式)转换为 **大/小驼峰** 命名方式。
+> 在配置文件 `config.{dev}.js` 可添加 `nameFormat` 属性，配置如下：
+> - **big-camel**：大驼峰命名，如 `SystemUser`；
+> - **little-camel**：小驼峰命名，如 `systemUser`；
+> - **normal 或未填写**：默认命名，如 `system_user`；
+
+```javascript
+// config/config.{dev}.js
+
+// modelsImport
+config.modelsImport = {
+    modelExport: {
+		...
+		nameFormat: 'big-camel', // little-camel | normal
+	｝
+｝
 ```
 
 ## 5. 热更新 (1.0.8新增)
@@ -237,12 +256,18 @@ config.modelsImport = {
 
 
 ## 历史版本
+> `1.0.82` ：
+> - 新增 生成模型时的模型名格式多样化表现，添加了下划线命名转换“大/小驼峰命名”的配置；详情见 ** 4.模型访问 **
+> 
+> `1.0.81` ：
+> - 修复了简洁模式下的几个严重bug；
+> 
 > `1.0.8` ：
 > 1. 新增 数据热更新模式；
 > 2. 微调 现有执行过程；
 > 
 > `1.0.7` ：
-> 1. 隐藏了 `ctx.model_promise` 的挂载方式，直接将从**数据核心**获取的 `models` 挂载至 `ctx.model`，以便旧项目无缝使用。
+> - 隐藏了 `ctx.model_promise` 的挂载方式，直接将从**数据核心**获取的 `models` 挂载至 `ctx.model`，以便旧项目无缝使用。
 >
 > `1.0.6` ：
 > 1. 新增 对**数据核心**多库的支持；

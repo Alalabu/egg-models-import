@@ -3,6 +3,7 @@ const Sequelize = require('sequelize');
 const moment = require('moment');
 const cronParser = require('cron-parser');
 const HttpClient = require('./http-client');
+const NameFormat = require('./name-format');
 
 /**
  * 函数用于加载远程的 sequelize models
@@ -18,8 +19,18 @@ const loadRemoteModels = async app => {
   try {
     // 1. 获取配置信息
     const modelsImport = app.config.modelsImport; // 插件配置
+
     const _sequelize = modelsImport.sequelize;
     const modelExport = modelsImport.modelExport;
+    const ModelNameFormatFn = (() => {
+      const { nameFormat } = modelExport;
+      switch (nameFormat) {
+        case 'big-camel': return NameFormat.underToBigCamelCase;
+        case 'little-camel': return NameFormat.underToLittleCamelCase;
+        default: return NameFormat.normal;
+      }
+    })();
+
     const { modelHost, modelIn, modelAttrs, authKey, authSecret } = modelExport;
     const { dialect, host, port, database, username, password, timezone, pool, retry, logging } = _sequelize;
     const sequelize = new Sequelize(database, username, password, {
@@ -82,15 +93,18 @@ const loadRemoteModels = async app => {
         }
         model_tmp[ele.name] = val;
       });
-      // 模型名字
-      const SequelizeModelName = model_name;
+
       // 通过 sequelize.define 定义模型
       // 通过 sequelize 生成模型实例
       // console.log(`${model_name} loading...`, model_tmp);
       const m = sequelize.define(model_name, model_tmp,
         { tableName: model_name, timestamps: false });
+
+      // 模型名字
+      const SequelizeModelName = ModelNameFormatFn(model_name);
+      // console.log('SequelizeModelName: ', SequelizeModelName);
       // 将每一个模型实例挂载到虚拟对象 [MockModel] 中
-      MockModel[model_name] = m;
+      MockModel[SequelizeModelName] = m;
       // console.log(`${model_name} done...`);
 
       // 添加对象关系
@@ -117,9 +131,10 @@ const loadRemoteModels = async app => {
       modelOnce.associations.forEach(assEntry => {
         const { associationAccessor, associationType, foreignKey, targetKey, as } = assEntry;
         const assFn = associationType[0].toLowerCase() + associationType.substring(1, associationType.length);
+        // console.log('modelOnce.model: ', modelOnce.model);
         // 动态填充模型对象关联关系
         MockModel[modelOnce.model][assFn](
-          MockModel[associationAccessor], { foreignKey, targetKey, as }
+          MockModel[ModelNameFormatFn(associationAccessor)], { foreignKey, targetKey, as }
         );
       });
     });
