@@ -42,7 +42,7 @@ Description here.
 - 将数据模型文件部分做为独立项目运行，其他**关联项目**在启动时，异步访问**数据模型项目**，根据解析结果生成虚拟**sequelize models**。
 ![](https://sheu-huabei5.oss-cn-huhehaote.aliyuncs.com/bho/egg-models-xxx%2003.jpg)
 
-- 插件分为两部分：`egg-models-import` 和 `egg-models-export`。顾名思义，前者是**导入**行为，**关联项目**所需使用的，用于异步加载并生成数据模型缓存；后者是**导出**行为，**数据模型项目**所需的，用于对外提供远程接口，根据真实的数据模型，为**关联项目**提供模型解析方案。
+- 插件分为两部分：`egg-models-import` 和 `egg-models-export`。顾名思义，前者是**导入**行为，**关联项目**所需使用的，用于异步加载并生成数据模型缓存；后者是**导出**行为，**数据核心项目**所需的，用于对外提供远程接口，根据真实的数据模型，为**分支关联项目**提供模型解析方案。
 
 ## egg-models-export 配置
 请到 [egg-models-export](https://github.com/Alalabu/egg-models-export) 查看详细配置项说明。
@@ -67,9 +67,11 @@ $ npm i egg-models-import --save
 
 ```js
 // config/plugin.js
-exports.modelsImport = {
-  enable: true,
-  package: 'egg-models-import',
+module.exports = {
+  modelsImport: {
+    enable: true,
+    package: 'egg-models-import',
+  }
 };
 ```
 
@@ -91,7 +93,8 @@ module.exports = appInfo => {
   // modelsImport
   config.modelsImport = {
     modelExport: {
-	  // 这里所配置的, 是你的 egg-models-export 项目访问方式
+	  // 数据核心 egg-models-export 项目访问方式
+	  // 简单模式下，配置 modelHost 即可运行
       modelHost: 'http://127.0.0.1:7001/',
 	  // 鉴权时所需的 key
 	  authKey: 'project-1',
