@@ -5,6 +5,44 @@ const cronParser = require('cron-parser');
 const HttpClient = require('./http-client');
 const NameFormat = require('./name-format');
 
+const Op = Sequelize.Op;
+// sequelize v5 operators aliases
+const operatorsAliases = {
+  $eq: Op.eq,
+  $ne: Op.ne,
+  $gte: Op.gte,
+  $gt: Op.gt,
+  $lte: Op.lte,
+  $lt: Op.lt,
+  $not: Op.not,
+  $in: Op.in,
+  $notIn: Op.notIn,
+  $is: Op.is,
+  $like: Op.like,
+  $notLike: Op.notLike,
+  $iLike: Op.iLike,
+  $notILike: Op.notILike,
+  $regexp: Op.regexp,
+  $notRegexp: Op.notRegexp,
+  $iRegexp: Op.iRegexp,
+  $notIRegexp: Op.notIRegexp,
+  $between: Op.between,
+  $notBetween: Op.notBetween,
+  $overlap: Op.overlap,
+  $contains: Op.contains,
+  $contained: Op.contained,
+  $adjacent: Op.adjacent,
+  $strictLeft: Op.strictLeft,
+  $strictRight: Op.strictRight,
+  $noExtendRight: Op.noExtendRight,
+  $noExtendLeft: Op.noExtendLeft,
+  $and: Op.and,
+  $or: Op.or,
+  $any: Op.any,
+  $all: Op.all,
+  $values: Op.values,
+  $col: Op.col,
+};
 /**
  * 函数用于加载远程的 sequelize models
  * @param {Object} sequelize 是 sequelize 实例，经由用户进行配置
@@ -22,6 +60,7 @@ const loadRemoteModels = async app => {
 
     const _sequelize = modelsImport.sequelize;
     const modelExport = modelsImport.modelExport;
+    // 模型名格式化方式
     const ModelNameFormatFn = (() => {
       const { nameFormat } = modelExport;
       switch (nameFormat) {
@@ -30,11 +69,13 @@ const loadRemoteModels = async app => {
         default: return NameFormat.normal;
       }
     })();
+    // 是否开启默认的条件操作符，默认开启，可关闭
+    const operAliases = modelExport.operAliases === false ? null : operatorsAliases;
 
     const { modelHost, modelIn, modelAttrs, authKey, authSecret } = modelExport;
     const { dialect, host, port, database, username, password, timezone, pool, retry, logging } = _sequelize;
     const sequelize = new Sequelize(database, username, password, {
-      dialect, host, port, timezone, pool, retry, logging,
+      dialect, host, port, timezone, pool, retry, logging, operatorsAliases: operAliases,
     });
     // 2. 从外部动态获取 models 列表
     const modelInRes = await HttpClient.$http(`${modelHost}${modelIn}`, 'POST', { authKey, authSecret });

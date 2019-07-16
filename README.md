@@ -254,8 +254,69 @@ config.modelsImport = {
 - 在 **更新模型** 行为结束后，需 **将模型版本号 `version.code` 配置为新的标识**，**分支** 在检查版本时若发现 **不一样的版本号** ，则对当前进程中的虚拟数据进行热更新。
 - 为避免影响线上业务，可在 **数据核心** 的 `version` 中设置更新时机，规避业务高峰。
 
+## 6. 操作符别名 operatorsAliases
+在 `Sequelize v5` 中为了安全起见 ( [详见operators-security](http://docs.sequelizejs.com/manual/querying.html#operators-security) )，禁用了历史版本中操作符的定义。为了更好的向上兼容，默认情况下 `egg-models-import` 添加了原有的操作符名：
+``` js
+const Op = Sequelize.Op;
+// sequelize v5 operators aliases
+const operatorsAliases = {
+  $eq: Op.eq,
+  $ne: Op.ne,
+  $gte: Op.gte,
+  $gt: Op.gt,
+  $lte: Op.lte,
+  $lt: Op.lt,
+  $not: Op.not,
+  $in: Op.in,
+  $notIn: Op.notIn,
+  $is: Op.is,
+  $like: Op.like,
+  $notLike: Op.notLike,
+  $iLike: Op.iLike,
+  $notILike: Op.notILike,
+  $regexp: Op.regexp,
+  $notRegexp: Op.notRegexp,
+  $iRegexp: Op.iRegexp,
+  $notIRegexp: Op.notIRegexp,
+  $between: Op.between,
+  $notBetween: Op.notBetween,
+  $overlap: Op.overlap,
+  $contains: Op.contains,
+  $contained: Op.contained,
+  $adjacent: Op.adjacent,
+  $strictLeft: Op.strictLeft,
+  $strictRight: Op.strictRight,
+  $noExtendRight: Op.noExtendRight,
+  $noExtendLeft: Op.noExtendLeft,
+  $and: Op.and,
+  $or: Op.or,
+  $any: Op.any,
+  $all: Op.all,
+  $values: Op.values,
+  $col: Op.col,
+};
+```
+若希望更安全的使用操作符，可以禁用默认别名：
+```js
+// config/config.{dev}.js
+
+config.modelsImport = {
+    modelExport: {
+      // 其他配置...
+
+      // 禁用操作符别名
+      operAliases: false,
+    },
+    sequelize: {
+		// ...
+	}
+}
+```
 
 ## 历史版本
+> `1.0.83` ：
+> 1. 为了更好的兼容 `v4` 版本，添加了默认的操作符别名配置 `config.modelsImport.modelsExport.operAliases`，配置值为 `false` 时将不使用默认的操作符别名，而采用手动控制。
+> 
 > `1.0.82` ：
 > - 新增 生成模型时的模型名格式多样化表现，添加了下划线命名转换“大/小驼峰命名”的配置；详情见 ** 4.模型访问 **
 > 
